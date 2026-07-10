@@ -109,3 +109,18 @@ mb52_new_columns_names = {
     "Pozycja (SD)": "customer_order_position",
     "Nieogranicz.wykorz.": "stock_quantity",
 }
+
+cohv_dtypes = {
+    "Nr materiału": "string",
+    "Zlecenie": "string",
+    "Zakład": "string",
+}
+
+cohv_new_columns_names = {
+    "Nr materiału": "mat_number",
+    "Krótki tekst materiału": "mat_description",
+    "Zlecenie": "production_order_number",
+    "Godz. rozp. wg harm.": "production_date",
+    "Zakład": "production_plant",
+    "Ilość zlecenia (GMEIN)": "production_quantity"
+}
