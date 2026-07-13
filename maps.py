@@ -56,6 +56,7 @@ vbap_new_columns_names = {
 mb5td_dtypes = {
     'Materiał': 'string',
     'Zakład': 'string',
+    'Zakład dostarczający': 'string',
     'Ilość': 'float',
     'Dok.zaopatrz.': 'string',
     'Pozycja': 'string',
