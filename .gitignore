@@ -222,4 +222,5 @@ __marimo__/
 sap_nums.xlsx
 
 # Jupyter Notebook
-#notebook.ipynb
+notebook.ipynb
+delayed_stock_orders_report.ipynb

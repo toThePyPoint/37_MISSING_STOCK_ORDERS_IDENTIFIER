@@ -229,13 +229,52 @@ def determine_shortages(source_files_dict: dict, mrp_controllers_tuple: tuple, p
     boundary_dates = final_df['delivery_plant'].map(DATES_RANGE_FILTER)
     boundary_dates = pd.to_datetime(boundary_dates)
 
-    # 3. Keep rows where dispatch_date is less than or equal to the boundary date.
+    # Keep rows where dispatch_date is less than or equal to the boundary date.
     # (If a plant isn't in your dictionary, we keep it by using .isna())
     filtered_final_df = final_df[
         (final_df['dispatch_date'] <= boundary_dates) | (boundary_dates.isna())
         ]
 
     filtered_final_df.to_excel(output_files_dict[f'df_{assembly_line}'], index=False)
+
+    # Get shortages df
+    shortages_df = filtered_final_df[filtered_final_df['stock_left'] < 0][
+        ['delivery_plant', 'mat_number', 'mat_description', 'dispatch_date', 'stock_left']]
+
+    # Get customer orders numbers from zsdkap
+    zsdkap_customer_orders = zsdkap_customer_orders[
+        ['delivery_plant', 'mat_number', 'mat_description', 'orders_quantity', 'creation_date', 'dispatch_date',
+         'customer_order_number', 'customer_order_position']]
+
+    # Filter the df
+    zsdkap_customer_orders = zsdkap_customer_orders.sort_values(
+        by=['delivery_plant', 'mat_number', 'creation_date', 'dispatch_date'],
+        ascending=[True, True, False, True]).reset_index(drop=True)
+
+    # calculate cumsums within the groups
+    zsdkap_customer_orders['cum_orders'] = \
+    zsdkap_customer_orders.groupby(['delivery_plant', 'mat_number', 'dispatch_date'])['orders_quantity'].cumsum()
+
+    # Create df with delayed orders
+    shortages_temp = shortages_df[['delivery_plant', 'mat_number', 'dispatch_date', 'stock_left']].copy()
+    shortages_temp['shortage'] = shortages_temp['stock_left'] * -1
+    shortages_temp = shortages_temp.drop(columns=['stock_left'])
+
+    # Keep only rows with shortages
+    delayed_orders = pd.merge(
+        zsdkap_customer_orders,
+        shortages_temp,
+        on=['delivery_plant', 'mat_number', 'dispatch_date'],
+        how='inner'
+    )
+
+    # Mark orders which should be delayed
+    delayed_orders['to_be_delayed'] = (
+            (delayed_orders['cum_orders'] - delayed_orders['orders_quantity']) < delayed_orders['shortage']
+    )
+
+    return shortages_df, delayed_orders
+
 
 if __name__ == "__main__":
     lines = ["zar", "zrv", "zri"]
@@ -253,4 +292,4 @@ if __name__ == "__main__":
     ]
 
     for line, names, controllers in zip(lines, product_names, mrp_controllers):
-        determine_shortages(source_files, controllers, names, output_files, line,)
+        df1, df2 = determine_shortages(source_files, controllers, names, output_files, line,)
