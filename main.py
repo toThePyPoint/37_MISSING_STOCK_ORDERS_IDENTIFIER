@@ -7,7 +7,7 @@ from maps import (zsdkap_new_columns_names, zsdkap_dtypes, vbap_new_columns_name
                   cohv_new_columns_names)
 from py_rfc_methods import get_delivery_plants_and_special_stock_indicators_df
 from helper_functions import clean_number
-
+from display_module import _display_report_item, _display_report_header
 
 SAP_SYSTEM = "P11_SSO"
 STORAGE_LOCATIONS = ['0004', '0005']
@@ -44,7 +44,7 @@ source_files = {key: source_files_dir / name for key, name in source_file_names.
 output_files = {key: output_files_dir / name for key, name in output_file_names.items()}
 
 def determine_shortages(source_files_dict: dict, mrp_controllers_tuple: tuple, product_names_tuple: tuple,
-                        output_files_dict: dict, assembly_line: str):
+                        output_files_dict: dict, assembly_line: str, display_output: bool = False):
 
     zsdkap = pd.read_csv(source_files_dict["zsdkap"], dtype=zsdkap_dtypes, sep=';', encoding='MacRoman')
 
@@ -272,6 +272,13 @@ def determine_shortages(source_files_dict: dict, mrp_controllers_tuple: tuple, p
     delayed_orders['to_be_delayed'] = (
             (delayed_orders['cum_orders'] - delayed_orders['orders_quantity']) < delayed_orders['shortage']
     )
+
+    if display_output:
+        _display_report_header(display_output, f"## Assembly Line: {assembly_line.upper()}")
+        _display_report_header(display_output, f"#### Shortages DF:")
+        _display_report_item(display_output, shortages_df)
+        _display_report_header(display_output, f"#### List of orders to be delayed:")
+        _display_report_item(display_output, delayed_orders)
 
     return shortages_df, delayed_orders
 
